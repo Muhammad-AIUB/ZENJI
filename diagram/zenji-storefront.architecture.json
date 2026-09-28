@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "ZENJI Storefront — One-Page Demo Architecture",
+    "locale": "en",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "shopper", "type": "external", "label": "Shopper", "sublabel": "mobile / desktop", "pos": [40, 300], "size": [130, 60], "tag": "keyboard + touch" },
+    { "id": "shell", "type": "frontend", "label": "Header + Hero", "sublabel": "Shop CTA", "pos": [250, 300], "size": [140, 60] },
+    { "id": "grid", "type": "frontend", "label": "Product Grid", "sublabel": "cards + size select", "pos": [470, 300], "size": [150, 60] },
+    { "id": "store", "type": "backend", "label": "Cart Store", "sublabel": "add / remove / qty", "pos": [700, 300], "size": [150, 60], "tag": "subtotal calc" },
+    { "id": "drawer", "type": "frontend", "label": "Cart Drawer", "sublabel": "focus-trapped dialog", "pos": [930, 300], "size": [150, 60] },
+    { "id": "catalog", "type": "database", "label": "products.js", "sublabel": "mock catalog", "pos": [470, 140], "size": [150, 60] },
+    { "id": "storage", "type": "database", "label": "localStorage", "sublabel": "cart persistence", "pos": [700, 140], "size": [150, 60] },
+    { "id": "assets", "type": "cloud", "label": "Image Assets", "sublabel": "licensed / placeholder", "pos": [470, 460], "size": [150, 60] },
+    { "id": "checkout", "type": "external", "label": "Demo Checkout", "sublabel": "no real payment", "pos": [930, 460], "size": [150, 60] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Static site — no backend, no accounts", "wraps": ["shell", "grid", "store", "drawer", "catalog", "storage", "assets", "checkout"] }
+  ],
+  "connections": [
+    { "id": "visit", "from": "shopper", "to": "shell", "label": "visit", "variant": "emphasis" },
+    { "id": "shop-cta", "from": "shell", "to": "grid", "label": "Shop", "variant": "emphasis" },
+    { "id": "add-item", "from": "grid", "to": "store", "label": "add(id, size)", "variant": "emphasis" },
+    { "id": "render-cart", "from": "store", "to": "drawer", "label": "render", "variant": "emphasis" },
+    { "id": "load-catalog", "from": "catalog", "to": "grid", "label": "map to cards", "labelDy": 24, "fromSide": "bottom", "toSide": "top" },
+    { "id": "persist", "from": "store", "to": "storage", "label": "save / load", "variant": "dashed", "fromSide": "top", "toSide": "bottom" },
+    { "id": "images", "from": "assets", "to": "grid", "label": "srcset", "variant": "dashed", "fromSide": "top", "toSide": "bottom" },
+    { "id": "checkout-stub", "from": "drawer", "to": "checkout", "label": "stub", "labelDy": 24, "variant": "dashed", "fromSide": "bottom", "toSide": "top" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "UI", "items": ["Branded header, hero and Shop CTA", "4+ product cards with size selection", "Responsive grid: 1 col mobile → 4 col desktop"] },
+    { "dot": "emerald", "title": "Cart logic", "items": ["Add / remove items, update quantities", "Subtotal derived from line items", "Persisted in localStorage"] },
+    { "dot": "amber", "title": "Accessibility", "items": ["Native buttons / radios for sizes", "Visible focus, Esc closes drawer", "aria-live cart count updates"] }
+  ]
+}

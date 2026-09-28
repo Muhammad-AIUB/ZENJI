@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ZENJI — Wear the Arc · The Origin Drop</title>
+  <meta name="description" content="Anime-inspired streetwear. Every drop limited. No restocks. Ever. (Concept storefront demo.)" />
+  <meta name="theme-color" content="#0e0d0c" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23ff3d1f'/%3E%3Ctext x='32' y='48' font-size='44' text-anchor='middle' fill='%230e0d0c' font-family='sans-serif' font-weight='900'%3E力%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DM+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#shop">Skip to products</a>
+
+  <!-- Announcement ticker (duplicated track for a seamless loop; the copy is hidden from AT) -->
+  <div class="ticker" role="note" aria-label="Free shipping Australia-wide on orders over A$100. No restocks, ever.">
+    <div class="ticker-track" aria-hidden="true">
+      <span>Free shipping AU-wide over A$100</span><b>✦</b>
+      <span>No restocks. Ever.</span><b>✦</b>
+      <span>The Origin Drop — 第一章</span><b>✦</b>
+      <span>240gsm heavyweight cotton</span><b>✦</b>
+      <span>Free shipping AU-wide over A$100</span><b>✦</b>
+      <span>No restocks. Ever.</span><b>✦</b>
+      <span>The Origin Drop — 第一章</span><b>✦</b>
+      <span>240gsm heavyweight cotton</span><b>✦</b>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <a class="logo" href="#top" aria-label="ZENJI home">
+      <span class="logo-mark" aria-hidden="true">力</span>
+      <span class="logo-word">ZENJI</span>
+    </a>
+    <nav class="nav" aria-label="Primary">
+      <a href="#shop">Drop</a>
+      <a href="#story">Story</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <button class="cart-btn" type="button" aria-haspopup="dialog" aria-controls="cart">
+      <span class="cart-btn-label">Bag</span>
+      <span class="cart-count" data-cart-count aria-hidden="true">0</span>
+      <span class="visually-hidden" data-cart-count-sr>, 0 items</span>
+    </button>
+  </header>
+
+  <main id="top">
+    <!-- HERO: a manga spread. Panels are real grid cells, skewed with clip-path. -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="panel panel-title">
+        <p class="eyebrow"><span class="dot"></span> Drop 01 · Limited run · 限定</p>
+        <h1 id="hero-title" class="hero-title">
+          <span class="line"><span>Wear</span></span>
+          <span class="line"><span>the</span> <em>Arc.</em></span>
+        </h1>
+        <p class="hero-copy">
+          Anime-inspired streetwear for gamers and otaku. One strong graphic per piece.
+          Once a drop sells through, it is never reprinted.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#shop">
+            Shop the drop
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"/></svg>
+          </a>
+          <a class="btn btn-ghost" href="#story">Our story</a>
+        </div>
+      </div>
+
+      <div class="panel panel-feature" data-hero>
+        <div class="speedlines" aria-hidden="true"></div>
+        <p class="feature-kanji" data-hero-kanji aria-hidden="true">日</p>
+        <figure class="feature-figure">
+          <div class="feature-tee" data-hero-tee></div>
+          <figcaption class="feature-caption">
+            <span class="mono" data-hero-index>01 / 06</span>
+            <strong data-hero-name>Will of the Sun</strong>
+            <span data-hero-colorway>Solar Gold</span>
+          </figcaption>
+        </figure>
+        <div class="hero-pager" role="group" aria-label="Featured design" data-hero-pager></div>
+        <span class="sfx" aria-hidden="true">ゴゴゴ</span>
+      </div>
+
+      <div class="panel panel-vertical" aria-hidden="true">
+        <span class="vertical">物語を着ろ</span>
+        <span class="mono vertical-en">wear your story</span>
+      </div>
+
+      <dl class="panel panel-stats">
+        <div><dt>Weight</dt><dd>240<small>gsm</small></dd></div>
+        <div><dt>Designs</dt><dd>06</dd></div>
+        <div><dt>Restocks</dt><dd class="accent">00</dd></div>
+      </dl>
+    </section>
+
+    <!-- SHOP -->
+    <section id="shop" class="shop" aria-labelledby="shop-title" tabindex="-1">
+      <header class="section-head">
+        <p class="chapter mono">Chapter 01 — 第一章</p>
+        <h2 id="shop-title" class="section-title"><span>The Origin Drop</span></h2>
+        <p class="section-sub">Oversized fit · garment-washed · XS–XXL. Pick a size, add to bag.</p>
+      </header>
+
+      <div class="filters" role="group" aria-label="Filter products">
+        <button type="button" class="chip" aria-pressed="true" data-filter="all">All <span data-count-all></span></button>
+        <button type="button" class="chip" aria-pressed="false" data-filter="sale">On sale <span data-count-sale></span></button>
+      </div>
+
+      <ul class="grid" data-grid role="list"></ul>
+    </section>
+
+    <!-- STORY -->
+    <section id="story" class="story" aria-labelledby="story-title">
+      <h2 id="story-title" class="visually-hidden">Why ZENJI</h2>
+      <article class="story-panel">
+        <span class="story-num mono">壱</span>
+        <h3>Anime-inspired.</h3>
+        <p>References you can read without an explanation. One strong graphic per piece, never a template.</p>
+      </article>
+      <article class="story-panel">
+        <span class="story-num mono">弐</span>
+        <h3>Gamer-built.</h3>
+        <p>Made by people who grew up on the same arcs. Heavyweight cotton that survives the grind.</p>
+      </article>
+      <article class="story-panel">
+        <span class="story-num mono">参</span>
+        <h3>Community-owned.</h3>
+        <p>Limited runs, zero restocks. When a drop is gone, the story is yours to keep.</p>
+      </article>
+    </section>
+
+    <section id="faq" class="faq" aria-labelledby="faq-title">
+      <h2 id="faq-title" class="section-title small"><span>Questions</span></h2>
+      <details>
+        <summary>How does the fit run?</summary>
+        <p>Oversized. Take your usual size for a boxy drape, or size down for a closer fit.</p>
+      </details>
+      <details>
+        <summary>Will sold-out designs come back?</summary>
+        <p>No. Every drop is limited and never reprinted — that's the whole point.</p>
+      </details>
+      <details>
+        <summary>Is this store real?</summary>
+        <p>This is a concept demo. The bag works, but there are no payments, accounts or backend.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p class="footer-mark" aria-hidden="true">ZENJI</p>
+    <p class="footer-note">Concept storefront built as a design exercise. Demo cart only — no real orders or payments. All artwork is drawn in code.</p>
+  </footer>
+
+  <!-- CART: native <dialog> gives us focus containment + Esc to close for free. -->
+  <dialog id="cart" class="cart" aria-labelledby="cart-title">
+    <div class="cart-inner">
+      <header class="cart-head">
+        <h2 id="cart-title">Your bag <span class="mono" data-cart-head-count></span></h2>
+        <button type="button" class="icon-btn" data-close-cart aria-label="Close bag">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5 5 19" stroke="currentColor" stroke-width="2.4"/></svg>
+        </button>
+      </header>
+
+      <div class="ship-meter" data-ship>
+        <p data-ship-text></p>
+        <div class="meter" aria-hidden="true"><span data-ship-bar></span></div>
+      </div>
+
+      <ul class="cart-lines" data-cart-lines role="list"></ul>
+
+      <div class="cart-empty" data-cart-empty>
+        <p class="cart-empty-kanji" aria-hidden="true">空</p>
+        <p>Your bag is empty. Every story starts somewhere.</p>
+        <button type="button" class="btn btn-primary" data-close-cart data-go-shop>Browse the drop</button>
+      </div>
+
+      <footer class="cart-foot" data-cart-foot>
+        <dl class="totals">
+          <div><dt>Subtotal</dt><dd data-subtotal>A$0.00</dd></div>
+          <div class="muted"><dt>Shipping</dt><dd data-shipping>Calculated at checkout</dd></div>
+        </dl>
+        <button type="button" class="btn btn-primary btn-block" data-checkout>Checkout — demo</button>
+        <p class="fine">Demo only. No payment will be taken.</p>
+      </footer>
+    </div>
+  </dialog>
+
+  <div class="toast" role="status" aria-live="polite" data-toast></div>
+</body>
+</html>

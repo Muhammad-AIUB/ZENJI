@@ -1,0 +1,11 @@
+{
+  "name": "zenji-storefront",
+  "version": "1.0.0",
+  "private": true,
+  "description": "One-page ZENJI-inspired storefront demo with a working client-side cart.",
+  "type": "module",
+  "scripts": {
+    "start": "python -m http.server 5317",
+    "test": "node --test tests/"
+  }
+}
