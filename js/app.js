@@ -1,6 +1,7 @@
 import { products, catalog } from "./products.js";
 import { createStore, itemCount, subtotalCents, formatPrice, MAX_QTY } from "./cart.js";
 import { teeSVG } from "./tee.js";
+import { initCursor } from "./cursor.js";
 
 const FREE_SHIPPING_CENTS = 10000;
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -27,9 +28,9 @@ function cardHTML(p, i) {
     .join("");
 
   return `
-  <li class="card" style="--garment:${p.garment}; --i:${i}" data-id="${p.id}" ${onSale ? "data-sale" : ""}>
+  <li class="card" style="--garment:${p.garment}; --d:${i % 3}" data-reveal="up" data-id="${p.id}" ${onSale ? "data-sale" : ""}>
     <article aria-labelledby="name-${p.id}">
-      <div class="card-media" data-tilt>
+      <div class="card-media" data-tilt data-cursor="見る">
         <span class="card-no mono" aria-hidden="true">No.${String(i + 1).padStart(2, "0")}</span>
         ${onSale ? `<span class="badge">−${off}%</span>` : ""}
         <span class="card-kanji" aria-hidden="true">${p.kanji}</span>
@@ -51,7 +52,7 @@ function cardHTML(p, i) {
           <div class="size-row">${sizes}</div>
         </fieldset>
         <p class="size-error" id="err-${p.id}" aria-live="polite"></p>
-        <button type="button" class="btn btn-add" data-add>
+        <button type="button" class="btn btn-add" data-add data-cursor="Add +">
           <span>Add to bag</span>
           <span class="btn-add-kanji" aria-hidden="true">追加</span>
         </button>
@@ -320,16 +321,25 @@ function setupHero() {
 
 function enableTilt(root) {
   if (reducedMotion.matches || !matchMedia("(hover: hover)").matches) return;
+  let pending = null;
   root.addEventListener("pointermove", (e) => {
     const media = e.target.closest("[data-tilt]");
     if (!media) return;
-    const r = media.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width - 0.5;
-    const y = (e.clientY - r.top) / r.height - 0.5;
-    media.style.setProperty("--rx", `${(-y * 10).toFixed(2)}deg`);
-    media.style.setProperty("--ry", `${(x * 14).toFixed(2)}deg`);
-    media.style.setProperty("--mx", `${((x + 0.5) * 100).toFixed(1)}%`);
-    media.style.setProperty("--my", `${((y + 0.5) * 100).toFixed(1)}%`);
+    // Batch high-frequency pointer events into one style write per frame.
+    const first = !pending;
+    pending = { media, cx: e.clientX, cy: e.clientY };
+    if (!first) return;
+    requestAnimationFrame(() => {
+      const { media, cx, cy } = pending;
+      pending = null;
+      const r = media.getBoundingClientRect();
+      const x = (cx - r.left) / r.width - 0.5;
+      const y = (cy - r.top) / r.height - 0.5;
+      media.style.setProperty("--rx", `${(-y * 10).toFixed(2)}deg`);
+      media.style.setProperty("--ry", `${(x * 14).toFixed(2)}deg`);
+      media.style.setProperty("--mx", `${((x + 0.5) * 100).toFixed(1)}%`);
+      media.style.setProperty("--my", `${((y + 0.5) * 100).toFixed(1)}%`);
+    });
   });
   root.addEventListener("pointerout", (e) => {
     const media = e.target.closest("[data-tilt]");
@@ -396,20 +406,36 @@ function toast(message) {
   toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
 }
 
+// Every [data-reveal] element animates in once as it scrolls into view.
+// Variants (up / left / right / clip / scale / letters) live in CSS; only
+// transform, opacity and clip-path are animated, so it stays on the compositor.
 function setupReveal() {
+  const footerMark = $(".footer-mark");
+  footerMark.innerHTML = [...footerMark.textContent]
+    .map((ch, i) => `<span style="--l:${i}">${ch}</span>`)
+    .join("");
+
   if (reducedMotion.matches || !("IntersectionObserver" in window)) return;
-  document.documentElement.classList.add("js-reveal");
+  document.documentElement.classList.add("reveal-ready");
   const io = new IntersectionObserver(
     (entries) =>
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("in");
-          io.unobserve(entry.target);
-        }
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("in");
+        io.unobserve(entry.target);
       }),
-    { rootMargin: "0px 0px -10% 0px" }
+    { rootMargin: "0px 0px -12% 0px" }
   );
-  $$(".card, .story-panel, .section-head").forEach((el) => io.observe(el));
+  $$("[data-reveal]").forEach((el) => io.observe(el));
+}
+
+// Stop infinite animations (speed lines, float, ticker) while they're off screen.
+function pauseOffscreen() {
+  if (!("IntersectionObserver" in window)) return;
+  const io = new IntersectionObserver((entries) =>
+    entries.forEach((entry) => entry.target.classList.toggle("is-offscreen", !entry.isIntersecting))
+  );
+  $$(".hero, .ticker").forEach((el) => io.observe(el));
 }
 
 /* ------------------------------------------------------------------ Boot */
@@ -419,3 +445,5 @@ setupFilters();
 setupCart();
 setupHero();
 setupReveal();
+pauseOffscreen();
+initCursor(dialog);

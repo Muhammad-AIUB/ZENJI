@@ -40,11 +40,12 @@
       <a href="#story">Story</a>
       <a href="#faq">FAQ</a>
     </nav>
-    <button class="cart-btn" type="button" aria-haspopup="dialog" aria-controls="cart">
+    <button class="cart-btn" type="button" aria-haspopup="dialog" aria-controls="cart" data-cursor="Bag">
       <span class="cart-btn-label">Bag</span>
       <span class="cart-count" data-cart-count aria-hidden="true">0</span>
       <span class="visually-hidden" data-cart-count-sr>, 0 items</span>
     </button>
+    <span class="progress" aria-hidden="true"></span>
   </header>
 
   <main id="top">
@@ -61,7 +62,7 @@
           Once a drop sells through, it is never reprinted.
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#shop">
+          <a class="btn btn-primary" href="#shop" data-cursor="Shop ↓">
             Shop the drop
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"/></svg>
           </a>
@@ -69,7 +70,7 @@
         </div>
       </div>
 
-      <div class="panel panel-feature" data-hero>
+      <div class="panel panel-feature" data-hero data-cursor="ゴゴゴ">
         <div class="speedlines" aria-hidden="true"></div>
         <p class="feature-kanji" data-hero-kanji aria-hidden="true">日</p>
         <figure class="feature-figure">
@@ -98,13 +99,13 @@
 
     <!-- SHOP -->
     <section id="shop" class="shop" aria-labelledby="shop-title" tabindex="-1">
-      <header class="section-head">
+      <header class="section-head" data-reveal="clip">
         <p class="chapter mono">Chapter 01 — 第一章</p>
         <h2 id="shop-title" class="section-title"><span>The Origin Drop</span></h2>
         <p class="section-sub">Oversized fit · garment-washed · XS–XXL. Pick a size, add to bag.</p>
       </header>
 
-      <div class="filters" role="group" aria-label="Filter products">
+      <div class="filters" role="group" aria-label="Filter products" data-reveal="up" style="--d:2">
         <button type="button" class="chip" aria-pressed="true" data-filter="all">All <span data-count-all></span></button>
         <button type="button" class="chip" aria-pressed="false" data-filter="sale">On sale <span data-count-sale></span></button>
       </div>
@@ -115,17 +116,17 @@
     <!-- STORY -->
     <section id="story" class="story" aria-labelledby="story-title">
       <h2 id="story-title" class="visually-hidden">Why ZENJI</h2>
-      <article class="story-panel">
+      <article class="story-panel" data-reveal="left">
         <span class="story-num mono">壱</span>
         <h3>Anime-inspired.</h3>
         <p>References you can read without an explanation. One strong graphic per piece, never a template.</p>
       </article>
-      <article class="story-panel">
+      <article class="story-panel" data-reveal="scale" style="--d:1">
         <span class="story-num mono">弐</span>
         <h3>Gamer-built.</h3>
         <p>Made by people who grew up on the same arcs. Heavyweight cotton that survives the grind.</p>
       </article>
-      <article class="story-panel">
+      <article class="story-panel" data-reveal="right" style="--d:2">
         <span class="story-num mono">参</span>
         <h3>Community-owned.</h3>
         <p>Limited runs, zero restocks. When a drop is gone, the story is yours to keep.</p>
@@ -133,16 +134,16 @@
     </section>
 
     <section id="faq" class="faq" aria-labelledby="faq-title">
-      <h2 id="faq-title" class="section-title small"><span>Questions</span></h2>
-      <details>
+      <h2 id="faq-title" class="section-title small" data-reveal="clip"><span>Questions</span></h2>
+      <details data-reveal="up" style="--d:1">
         <summary>How does the fit run?</summary>
         <p>Oversized. Take your usual size for a boxy drape, or size down for a closer fit.</p>
       </details>
-      <details>
+      <details data-reveal="up" style="--d:2">
         <summary>Will sold-out designs come back?</summary>
         <p>No. Every drop is limited and never reprinted — that's the whole point.</p>
       </details>
-      <details>
+      <details data-reveal="up" style="--d:3">
         <summary>Is this store real?</summary>
         <p>This is a concept demo. The bag works, but there are no payments, accounts or backend.</p>
       </details>
@@ -150,8 +151,8 @@
   </main>
 
   <footer class="site-footer">
-    <p class="footer-mark" aria-hidden="true">ZENJI</p>
-    <p class="footer-note">Concept storefront built as a design exercise. Demo cart only — no real orders or payments. All artwork is drawn in code.</p>
+    <p class="footer-mark" aria-hidden="true" data-reveal="letters">ZENJI</p>
+    <p class="footer-note" data-reveal="up" style="--d:3">Concept storefront built as a design exercise. Demo cart only — no real orders or payments. All artwork is drawn in code.</p>
   </footer>
 
   <!-- CART: native <dialog> gives us focus containment + Esc to close for free. -->
@@ -189,5 +190,11 @@
   </dialog>
 
   <div class="toast" role="status" aria-live="polite" data-toast></div>
+
+  <!-- Decorative custom cursor (mouse only; see js/cursor.js) -->
+  <div class="cursor" data-cursor-root aria-hidden="true">
+    <span class="cursor-ring"><span class="cursor-ring-inner"><span class="cursor-label"></span></span></span>
+    <span class="cursor-dot"></span>
+  </div>
 </body>
 </html>

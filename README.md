@@ -39,7 +39,32 @@ like a printed manga chapter rather than a generic shop template:
     (ドン! バン! ズバッ!). A ghost of the tee then arcs into the bag button.
   - Cards tilt in 3D with a glare that follows the pointer.
   - The headline reveals line by line and the ticker scrolls continuously.
+  - **Every section animates in on scroll.** Titles clip-wipe in and then get a
+    highlighter sweep; cards rise in a staggered sequence; the three story panels slide in
+    from the left, scale up in the middle and slide in from the right; FAQ rows follow; the
+    footer wordmark rises letter by letter.
+  - Scroll-linked parallax on the kanji, a hero tee that sinks away as you scroll past,
+    and a red reading-progress bar under the header.
+  - **A custom ink cursor** (mouse only). A red dot tracks the pointer exactly and a
+    double-ring (ink + paper, so it reads on both backgrounds) trails behind it. It grows
+    over links and turns into a labelled disk over key targets ("Add +", "Shop ↓", "見る").
+    It sits in the top layer via `popover`, so it also works above the modal cart; touch
+    and keyboard users keep the native cursor.
   - Every motion effect is removed under `prefers-reduced-motion`.
+
+### Keeping it smooth
+
+- Reveals animate only `transform`, `opacity` and `clip-path`, so they stay on the
+  compositor.
+- Parallax and the progress bar use **CSS scroll-driven animations**
+  (`animation-timeline`), which run off the main thread. Browsers without support simply
+  skip them.
+- There are **no scroll listeners**. Reveals use one `IntersectionObserver`, and looping
+  animations (speed lines, ticker) pause while off screen or while the cart is open.
+- **No full-screen blur or blend layers.** The sticky header is solid, and the paper grain
+  is a small PNG tile rather than a live SVG filter.
+- **Pointer work is frame-bound.** Card tilt batches pointer events into one style write
+  per frame, and the cursor's rAF loop only runs while the ring is still catching up.
 
 ### Imagery
 
@@ -58,7 +83,7 @@ domain rings, seigaiha waves, rising sun, katana) and its kanji. So:
 | Branded header, hero, clear Shop CTA | Sticky header with 力 mark and live bag count; hero with a "Shop the drop" button |
 | ≥ 4 product cards with image, name, price, size | 6 cards: SVG tee, name, colourway, price (sale price + was-price), XS–XXL sizes with sold-out states |
 | Demo cart: add / remove / quantity / subtotal | Side drawer with a −/+ stepper and typed quantity (1–10), remove, live subtotal, free-shipping meter (A$100) |
-| Mobile + desktop polish | Fluid type with `clamp()`, 3 → 2 → 1 column grid, hero restacks under 1080px, drawer goes full-width on phones, 44px touch targets |
+| Mobile + desktop polish | Standard type scale (16px body) with `clamp()`, tuned at 320 / 390 / 820 / 1440 / 1920px; 3 → 2 → 1 column grid; hero restacks under 1080px; wide screens cap at 1600px; drawer goes full-width on phones |
 | Keyboard-friendly | See below |
 
 Extras:
@@ -88,11 +113,13 @@ Extras:
 
 ```
 index.html        semantic page shell (header, hero, shop, story, FAQ, cart dialog)
-css/styles.css    design tokens → components → responsive → reduced-motion
+css/styles.css    design tokens → components → reveal/cursor → responsive → reduced-motion
 js/products.js    mock catalogue (prices in integer AUD cents)
 js/cart.js        pure cart functions + a tiny persistent store
 js/tee.js         SVG tee renderer (silhouette + per-design motif)
-js/app.js         rendering, events, cart drawer, hero carousel, motion details
+js/app.js         rendering, events, cart drawer, hero carousel, scroll reveals
+js/cursor.js      custom ink cursor (mouse only)
+assets/grain.png  paper-grain tile
 tests/cart.test.js  unit tests for the cart logic
 diagram/          architecture diagram (Archify) of the page's data flow
 ```
@@ -110,8 +137,8 @@ from it. Money is kept in integer cents, so subtotals never pick up floating-poi
 - **No product detail page** or size guide. The fit note lives in the FAQ.
 - **The announcement ticker** pauses on hover and stops under reduced motion, but has no
   dedicated pause button.
-- **Browser coverage.** Tested in Chrome (desktop 1440×900, tablet 820×1180, mobile 390×844,
-  via headless Chrome screenshots). Not yet tested in Safari or Firefox, or with a real
+- **Browser coverage.** Tested in Chrome (320×640, 390×844, 820×1180, 1440×900 and
+  1920×1080, via headless Chrome screenshots). Not yet tested in Safari or Firefox, or with a real
   screen reader.
 - **Fonts** load from Google Fonts. Offline, it falls back to system fonts.
 
