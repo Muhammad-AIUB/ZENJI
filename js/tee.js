@@ -59,13 +59,29 @@ const motifs = {
  * @param {object} p product from products.js
  * @param {{ title?: boolean }} [opts] include an accessible <title> (off when a caption already names it)
  */
-export function teeSVG(p, { title = false } = {}) {
+function backPrint(p) {
+  const size = p.kanji.length > 2 ? 46 : p.kanji.length > 1 ? 62 : 96;
+  return `
+    <text x="150" y="84" text-anchor="middle" class="tee-word" fill="${p.ink}" opacity=".75">ZENJI · 力</text>
+    <text x="150" y="${150 + size * 0.36}" text-anchor="middle" class="tee-kanji" font-size="${size}" fill="${p.ink}">${p.kanji}</text>
+    <rect x="112" y="${172 + size * 0.36}" width="76" height="4" fill="${ACCENT}"/>`;
+}
+
+/**
+ * @param {object} p product from products.js
+ * @param {{ title?: boolean, side?: "front" | "back" }} [opts] `title` adds an accessible <title>; `side` picks the view
+ */
+export function teeSVG(p, { title = false, side = "front" } = {}) {
   const uid = `${p.id}-${++renderCount}`;
   const shade = `shade-${uid}`;
   const kanjiSize = p.kanji.length > 2 ? 17 : p.kanji.length > 1 ? 22 : 28;
+  const front = `${motifs[p.motif](p.ink, uid)}
+    <text x="150" y="${p.motif === "blade" ? 238 : 232}" text-anchor="middle" class="tee-kanji"
+      font-size="${kanjiSize}" fill="${p.ink}">${p.kanji}</text>
+    <text x="150" y="256" text-anchor="middle" class="tee-word" fill="${p.ink}" opacity=".75">ZENJI · 力</text>`;
   return `
   <svg class="tee" viewBox="0 0 300 320" ${title ? 'role="img"' : 'aria-hidden="true"'} focusable="false">
-    ${title ? `<title>${p.name} tee in ${p.colorway}</title>` : ""}
+    ${title ? `<title>${p.name} tee in ${p.colorway}, ${side} view</title>` : ""}
     <defs>
       <linearGradient id="${shade}" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stop-color="#fff" stop-opacity=".16"/>
@@ -78,9 +94,6 @@ export function teeSVG(p, { title = false } = {}) {
     <path d="M104 22 C120 44 180 44 196 22" fill="none" stroke="#000" stroke-opacity=".3" stroke-width="5"/>
     <path d="M62 112 L60 70 M238 112 L240 70" stroke="#000" stroke-opacity=".14" stroke-width="2"/>
     <path d="M100 250 q50 14 100 0" fill="none" stroke="#000" stroke-opacity=".08" stroke-width="10"/>
-    ${motifs[p.motif](p.ink, uid)}
-    <text x="150" y="${p.motif === "blade" ? 238 : 232}" text-anchor="middle" class="tee-kanji"
-      font-size="${kanjiSize}" fill="${p.ink}">${p.kanji}</text>
-    <text x="150" y="256" text-anchor="middle" class="tee-word" fill="${p.ink}" opacity=".75">ZENJI · 力</text>
+    ${side === "back" ? backPrint(p) : front}
   </svg>`;
 }

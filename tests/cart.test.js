@@ -73,3 +73,22 @@ test("subtotal ignores lines whose product no longer exists", () => {
   cart = addItem(cart, "a", "M");
   assert.equal(subtotalCents(cart, catalog), 3399);
 });
+
+import { shippingCents, orderTotals, FLAT_SHIPPING_CENTS, FREE_SHIPPING_CENTS } from "../js/cart.js";
+
+test("shipping is flat under the threshold, free at or above it, and zero for an empty bag", () => {
+  assert.equal(shippingCents(0), 0);
+  assert.equal(shippingCents(FREE_SHIPPING_CENTS - 1), FLAT_SHIPPING_CENTS);
+  assert.equal(shippingCents(FREE_SHIPPING_CENTS), 0);
+});
+
+test("orderTotals adds shipping to the subtotal in integer cents", () => {
+  const cart = addItem(emptyCart(), "a", "M", 2); // 2 x 3399 = 6798
+  assert.deepEqual(orderTotals(cart, catalog), {
+    subtotal: 6798,
+    shipping: FLAT_SHIPPING_CENTS,
+    total: 6798 + FLAT_SHIPPING_CENTS,
+  });
+  const big = addItem(emptyCart(), "b", "L", 3); // 3 x 3999 = 11997, free shipping
+  assert.equal(orderTotals(big, catalog).shipping, 0);
+});

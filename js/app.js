@@ -1,11 +1,12 @@
 import { products, catalog } from "./products.js";
-import { createStore, itemCount, subtotalCents, formatPrice, MAX_QTY } from "./cart.js";
+import { createStore, itemCount, subtotalCents, formatPrice, MAX_QTY, FREE_SHIPPING_CENTS } from "./cart.js";
 import { teeSVG } from "./tee.js";
 import { initCursor } from "./cursor.js";
 import { stackScale } from "./stack.js";
+import { setupModals, setupMenu } from "./modals.js";
+import { setupOrbit } from "./orbit.js";
 import { initReveal, refreshReveals, initHeroReveal } from "./reveal.js";
 
-const FREE_SHIPPING_CENTS = 10000;
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
@@ -32,7 +33,7 @@ function cardHTML(p, i) {
   return `
   <li class="card" style="--garment:${p.garment}; --d:${i % 3}" data-reveal="up" data-id="${p.id}" ${onSale ? "data-sale" : ""}>
     <article aria-labelledby="name-${p.id}">
-      <div class="card-media" data-tilt data-cursor="見る">
+      <div class="card-media" data-tilt data-details data-cursor="見る">
         <span class="card-no mono" aria-hidden="true">No.${String(i + 1).padStart(2, "0")}</span>
         ${onSale ? `<span class="badge">−${off}%</span>` : ""}
         <span class="card-kanji" aria-hidden="true">${p.kanji}</span>
@@ -49,6 +50,7 @@ function cardHTML(p, i) {
         </div>
         <p class="colorway"><i style="background:${p.garment}" aria-hidden="true"></i>${esc(p.colorway)}
           <span class="mono reading">${esc(p.reading)}</span></p>
+        <button type="button" class="link-btn card-details" data-details>Details &amp; back view</button>
         <fieldset class="sizes" aria-describedby="err-${p.id}">
           <legend>Size</legend>
           <div class="size-row">${sizes}</div>
@@ -71,7 +73,9 @@ function renderGrid() {
 
   grid.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-add]");
-    if (btn) addFromCard(btn.closest(".card"), btn);
+    if (btn) return addFromCard(btn.closest(".card"), btn);
+    const more = e.target.closest("[data-details]");
+    if (more) overlays.openDetail(more.closest(".card").dataset.id);
   });
   grid.addEventListener("change", (e) => {
     if (e.target.matches('input[type="radio"]')) {
@@ -211,9 +215,7 @@ function setupCart() {
     store.setQty(key, Number.isFinite(qty) && qty >= 1 ? qty : 1);
   });
 
-  $("[data-checkout]").addEventListener("click", () =>
-    toast("Demo store — checkout is switched off. Nothing was charged.")
-  );
+  $("[data-checkout]").addEventListener("click", () => overlays.openCheckout());
 
   store.subscribe(renderCart);
   renderCart(store.get());
@@ -556,6 +558,8 @@ function setupMarquee() {
 
 /* ------------------------------------------------------------------ Boot */
 
+const overlays = setupModals({ store, catalog, toast, closeCart });
+setupMenu();
 renderGrid();
 refreshReveals($("[data-grid]"));
 setupFilters();
@@ -566,5 +570,6 @@ initReveal();
 setupCounters();
 pauseOffscreen();
 setupStack();
+setupOrbit({ products, teeSVG, formatPrice, openDetail: overlays.openDetail });
 setupMarquee();
 initCursor(dialog);

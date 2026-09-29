@@ -33,13 +33,17 @@ There is nothing to install or build. Fonts come from Google Fonts and GSAP from
 | Demo cart: add / remove | Add from any card. Remove from the bag drawer. |
 | Demo cart: update quantities | `-` / `+` stepper and a typed quantity (1–10). Going to 0 removes the line. |
 | Demo cart: subtotal | Live subtotal, plus a free-shipping meter (free over A$100). |
+| Checkout flow (demo) | "Checkout" opens a review dialog with subtotal, shipping (flat A$9.95, free over A$100) and total. "Place demo order" shows an order number and clears the bag. No payment details are collected. |
+| 3D tile carousel | "Spin the drop" section: a looping 3D perspective carousel of the six tees. The centre tile faces you and the side tiles turn inward and recede. Drag, swipe, arrow keys or buttons move it. It auto-rotates with a pause toggle, and the centre tile opens its product dialog. |
+| Product detail | Each card has a "Details & back view" dialog with a front/back toggle, specs, size selection and add to bag. |
+| Size guide | A measurements table (XS–XXL) from the shop heading and from inside the product dialog. |
 | Mobile and desktop layout | Fluid type and spacing with `clamp()`. Breakpoints at 1279, 1080, 960, 720 and 480px. The product grid runs 3, 2 or 1 columns. The bag becomes a full-width sheet on phones. |
 | Readable text | 16px body copy, AA-contrast text colours (a darker red is used for small red text). |
 | Keyboard-friendly controls | Full keyboard flow, described under [Accessibility](#accessibility). |
 
 Extras beyond the brief: cart persistence in `localStorage`, an "On sale" filter, a FAQ,
 a "pick a size first" prompt that moves focus to the sizes, a pinned "Featured in this
-drop" card stack, and a custom cursor for mouse users.
+drop" card stack, a hamburger menu on phones, and a custom cursor for mouse users.
 
 ## Design direction
 
@@ -77,11 +81,13 @@ js/products.js      mock catalogue (prices in integer AUD cents)
 js/cart.js          pure cart functions + a small persistent store
 js/tee.js           SVG tee renderer (silhouette + per-design motif)
 js/app.js           rendering, events, cart drawer, hero carousel, filters
+js/modals.js        size guide, product detail, demo checkout and the mobile menu
+js/orbit.js         3D perspective tile carousel (pure pose maths + DOM wiring)
 js/reveal.js        GSAP/ScrollTrigger scroll reveals and the hero entrance
 js/stack.js         pure scale maths for the pinned "Featured" card stack
 js/cursor.js        custom ink cursor (mouse only)
 assets/grain.png    paper-grain tile
-tests/              unit tests for the cart logic and the stack maths
+tests/              unit tests for the cart logic, the stack maths and the carousel maths
 diagram/            architecture diagram of the page's data flow
 ```
 
@@ -93,6 +99,8 @@ DOM. The UI subscribes to one small store and re-renders from it.
 
 - Lines are keyed by product **and size**, so the same tee in two sizes is two lines.
 - Money is stored as **integer cents**, so subtotals never pick up floating-point drift.
+- Shipping and totals are pure functions too (`shippingCents`, `orderTotals`): flat A$9.95,
+  free at A$100 or more, nothing for an empty bag.
 - Quantity is clamped to 1–10. Setting it to 0 removes the line. A blank or invalid typed
   value snaps back to 1 rather than silently deleting the line.
 - On load, the saved cart is validated against the catalogue, so stale or tampered
@@ -117,8 +125,12 @@ DOM. The UI subscribes to one small store and re-renders from it.
   logo, nav, Bag, hero actions, hero pager, filters, then each card. Sizes are real radio
   groups, so arrow keys pick a size and sold-out sizes are skipped. Enter adds to the bag.
   Adding without a size shows "Pick a size first." and moves focus to the sizes.
-- **The bag** is a native `<dialog>` opened with `showModal()`, which gives focus
-  containment, Esc to close and focus return to the Bag button. Backdrop click also closes it.
+- **The bag, size guide, product detail and checkout** are native `<dialog>`s opened with
+  `showModal()`, which gives focus containment, Esc to close and focus return to the control
+  that opened them. Backdrop click also closes them. Checkout stacks on top of the bag, and
+  focus moves to its heading (including the order confirmation) so it is announced.
+- **The mobile menu** is a button with `aria-expanded`. Esc closes it and returns focus to
+  the button, and choosing a link closes it. All touch targets in the header are 44px.
 - **Focus stays put** when the bag re-renders after a quantity change. If you remove a line,
   focus moves to the neighbouring line, or to "Browse the drop" when the bag empties.
 - **Announcements.** The bag count, "added" and "removed" toasts and size errors use live
@@ -128,6 +140,10 @@ DOM. The UI subscribes to one small store and re-renders from it.
   and does not auto-advance under reduced motion.
 - **The rest.** Visible `:focus-visible` rings, a skip link, one `h1` with a sensible
   heading order, and decorative kanji and sound effects hidden from assistive tech.
+- **The 3D carousel** has one tab stop (the centred tile). Arrow keys move it, and focus follows
+  the centred tile. It auto-rotates only while visible and not hovered or focused, has an
+  "Auto-rotate" pause toggle, and announces changes through a live region only when it is not
+  rotating by itself. Under reduced motion it does not auto-rotate and jumps without easing.
 - **Reduced motion.** Every motion effect is removed under `prefers-reduced-motion`.
 
 ## Testing
@@ -136,38 +152,44 @@ DOM. The UI subscribes to one small store and re-renders from it.
 npm test
 ```
 
-13 unit tests cover the cart (add, merge same size, separate sizes, quantity clamp and
-remove-at-zero, no input mutation, integer-cent subtotals, unknown products) and the
-featured-stack scale maths.
+21 unit tests cover the cart (add, merge same size, separate sizes, quantity clamp and
+remove-at-zero, no input mutation, integer-cent subtotals, unknown products, shipping and
+order totals) and the featured-stack scale maths and the 3D carousel's wrap-around and pose maths.
 
 Also checked by hand in Chrome:
 
 - the full cart flow: add without a size, add with a size, step and type quantities, the
   quantity cap, remove, the empty state, persistence across reload, Esc to close;
 - the full keyboard flow described above;
-- a phone-width viewport (375px): no horizontal page overflow, one-column grid, 48px add
-  buttons;
+- size guide, product detail (front/back toggle, size validation, add to bag) and the whole
+  checkout flow through to the order confirmation, including the shipping maths;
+- the mobile menu at phone width: opens, links are 47px tall, Esc closes it, a link closes it;
+- a responsive sweep at 15 sizes (320, 375, 414, 480, 600, 720, 721, 768, 820, 1024, 1280,
+  1440, 1920 wide, plus 667x375 and 812x375 landscape phones). At each size: no sideways page
+  scroll, correct header mode (hamburger up to 720px), tappable controls (at least 40px, most 44px),
+  no tiny text, no clipped featured cards, and the size guide, product dialog, bag and checkout
+  all fit the screen;
 - scroll reveals and the pinned stack: every section becomes visible with no console errors.
 
 ## Known limits and unfinished
 
-- **Checkout is a stub.** The button shows a toast and nothing is charged. There are no real
-  products, stock levels or orders.
+- **Checkout is a demo.** It shows a review, shipping and an order number, but there are no
+  real products, stock levels, orders or payment step, as the brief allows.
 - **Artwork is illustrative.** The tees are stylised SVGs, not product photography. Each
-  product has one front view: no gallery, zoom or back print.
-- **No product detail page or size guide.** The fit note lives in the FAQ.
+  product has a front and a back view, but no zoom or extra photos.
+- **Size guide values are demo data**, not measured garments.
 - **The announcement ticker** pauses on hover and stops under reduced motion, but has no
   dedicated pause button.
-- **Phone navigation.** The Drop / Story / FAQ links are hidden on small screens. The hero
-  "Shop the drop" button and the Bag button remain.
-- **Bag button size.** The Bag button is about 38px tall on phones, slightly under the usual
-  44px tap target.
 - **Browser coverage.** Tested in Chrome only. Not tested in Safari or Firefox, or with a
-  real screen reader.
+  real screen reader, so that remains open.
 - **External assets.** Fonts (Google Fonts) and GSAP (jsDelivr) load from CDNs. Offline, the
   page falls back to system fonts and skips scroll reveals.
 
 ---
+
+*The "Spin the drop" carousel is my own implementation of a 3D perspective tile loop, inspired
+by the public preview video of Osmo's "3D Perspective Tiles Infinite Loop". The resource itself is
+locked behind a membership, so none of its code was used.*
 
 *Concept build for a design exercise. Not affiliated with or endorsed by ZENJI. Product names
 and colourways reference the public Origin Drop for brand fit. All artwork on this page is

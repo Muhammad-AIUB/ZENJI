@@ -38,6 +38,18 @@ export function subtotalCents(cart, catalog) {
 
 export const formatPrice = (cents) => `A$${(cents / 100).toFixed(2)}`;
 
+export const FREE_SHIPPING_CENTS = 10000;
+export const FLAT_SHIPPING_CENTS = 995;
+
+export const shippingCents = (subtotal) =>
+  subtotal === 0 || subtotal >= FREE_SHIPPING_CENTS ? 0 : FLAT_SHIPPING_CENTS;
+
+export function orderTotals(cart, catalog) {
+  const subtotal = subtotalCents(cart, catalog);
+  const shipping = shippingCents(subtotal);
+  return { subtotal, shipping, total: subtotal + shipping };
+}
+
 // Thin persistent store around the pure functions above.
 const STORAGE_KEY = "zenji.cart.v1";
 
@@ -61,6 +73,7 @@ export function createStore(catalog) {
     add: (id, size) => commit(addItem(cart, id, size)),
     setQty: (key, qty) => commit(setQty(cart, key, qty)),
     remove: (key) => commit(removeItem(cart, key)),
+    clear: () => commit(emptyCart()),
   };
 }
 

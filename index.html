@@ -37,7 +37,7 @@
       <span class="logo-mark" aria-hidden="true">力</span>
       <span class="logo-word">ZENJI</span>
     </a>
-    <nav class="nav" aria-label="Primary">
+    <nav class="nav" id="site-nav" aria-label="Primary">
       <a href="#shop">Drop</a>
       <a href="#story">Story</a>
       <a href="#faq">FAQ</a>
@@ -46,6 +46,9 @@
       <span class="cart-btn-label">Bag</span>
       <span class="cart-count" data-cart-count aria-hidden="true">0</span>
       <span class="visually-hidden" data-cart-count-sr>, 0 items</span>
+    </button>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
+      <span class="menu-bars" aria-hidden="true"><i></i><i></i><i></i></span>
     </button>
     <span class="progress" aria-hidden="true"></span>
   </header>
@@ -104,7 +107,7 @@
       <header class="section-head" data-reveal="clip">
         <p class="chapter mono">Chapter 01 — 第一章</p>
         <h2 id="shop-title" class="section-title"><span>The Origin Drop</span></h2>
-        <p class="section-sub">Oversized fit · garment-washed · XS–XXL. Pick a size, add to bag.</p>
+        <p class="section-sub">Oversized fit · garment-washed · XS–XXL. Pick a size, add to bag. <button type="button" class="link-btn" data-open="sizeguide">Size guide</button></p>
       </header>
 
       <div class="filters" role="group" aria-label="Filter products" data-reveal="up" style="--d:2">
@@ -270,6 +273,28 @@
       </div>
     </div>
 
+    <!-- 3D PERSPECTIVE TILE CAROUSEL -->
+    <section class="orbit" aria-labelledby="orbit-title" data-orbit>
+      <header class="orbit-head" data-reveal="up">
+        <p class="chapter mono">Chapter 03 — 第三章</p>
+        <h2 id="orbit-title" class="section-title"><span>Spin the drop</span></h2>
+        <p class="section-sub">Drag, swipe or use the arrow keys. Tap the centre tee for its details.</p>
+      </header>
+      <div class="orbit-stage" role="group" aria-roledescription="carousel" aria-label="The Origin Drop, 3D carousel" data-orbit-stage>
+        <div class="orbit-track" data-orbit-track></div>
+      </div>
+      <div class="orbit-controls">
+        <button type="button" class="icon-btn" data-orbit-step="-1" aria-label="Previous tee">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6m6-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"/></svg>
+        </button>
+        <p class="orbit-status mono" data-orbit-status aria-live="off"></p>
+        <button type="button" class="icon-btn" data-orbit-step="1" aria-label="Next tee">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"/></svg>
+        </button>
+        <button type="button" class="chip orbit-toggle" data-orbit-toggle aria-pressed="true">Auto-rotate</button>
+      </div>
+    </section>
+
     <section id="faq" class="faq" aria-labelledby="faq-title">
       <h2 id="faq-title" class="section-title small" data-reveal="clip"><span>Questions</span></h2>
       <details data-reveal="up" style="--d:1">
@@ -324,6 +349,54 @@
         <p class="fine">Demo only. No payment will be taken.</p>
       </footer>
     </div>
+  </dialog>
+
+  <!-- SIZE GUIDE -->
+  <dialog id="sizeguide" class="modal" aria-labelledby="sizeguide-title">
+    <header class="modal-head">
+      <h2 id="sizeguide-title">Size guide</h2>
+      <button type="button" class="icon-btn" data-close-modal aria-label="Close size guide">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5 5 19" stroke="currentColor" stroke-width="2.4"/></svg>
+      </button>
+    </header>
+    <div class="modal-body">
+      <p>ZENJI tees are cut oversized with a boxy drape. Take your usual size for the intended fit, or size down one for a closer fit.</p>
+      <table class="guide-table">
+        <caption class="visually-hidden">Flat garment measurements in centimetres</caption>
+        <thead><tr><th scope="col">Size</th><th scope="col">Chest (cm)</th><th scope="col">Length (cm)</th><th scope="col">Sleeve (cm)</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">XS</th><td>56</td><td>68</td><td>21</td></tr>
+          <tr><th scope="row">S</th><td>58</td><td>70</td><td>22</td></tr>
+          <tr><th scope="row">M</th><td>60</td><td>72</td><td>23</td></tr>
+          <tr><th scope="row">L</th><td>62</td><td>74</td><td>24</td></tr>
+          <tr><th scope="row">XL</th><td>64</td><td>76</td><td>25</td></tr>
+          <tr><th scope="row">XXL</th><td>66</td><td>78</td><td>26</td></tr>
+        </tbody>
+      </table>
+      <p class="fine">Flat measurements of the garment, laid flat. Demo values for this concept store.</p>
+    </div>
+  </dialog>
+
+  <!-- PRODUCT DETAIL -->
+  <dialog id="detail" class="modal modal--wide" aria-labelledby="detail-title">
+    <header class="modal-head">
+      <h2>Product details</h2>
+      <button type="button" class="icon-btn" data-close-modal aria-label="Close product details">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5 5 19" stroke="currentColor" stroke-width="2.4"/></svg>
+      </button>
+    </header>
+    <div class="modal-body" data-detail-body></div>
+  </dialog>
+
+  <!-- DEMO CHECKOUT -->
+  <dialog id="checkout" class="modal" aria-labelledby="checkout-title">
+    <header class="modal-head">
+      <h2 id="checkout-title">Checkout (demo)</h2>
+      <button type="button" class="icon-btn" data-close-modal aria-label="Close checkout">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5 5 19" stroke="currentColor" stroke-width="2.4"/></svg>
+      </button>
+    </header>
+    <div class="modal-body" data-checkout-body></div>
   </dialog>
 
   <div class="toast" role="status" aria-live="polite" data-toast></div>
