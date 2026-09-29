@@ -2,6 +2,8 @@ import { products, catalog } from "./products.js";
 import { createStore, itemCount, subtotalCents, formatPrice, MAX_QTY } from "./cart.js";
 import { teeSVG } from "./tee.js";
 import { initCursor } from "./cursor.js";
+import { stackScale } from "./stack.js";
+import { initReveal, refreshReveals, initHeroReveal } from "./reveal.js";
 
 const FREE_SHIPPING_CENTS = 10000;
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -406,44 +408,163 @@ function toast(message) {
   toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
 }
 
-// Every [data-reveal] element animates in once as it scrolls into view.
-// Variants (up / left / right / clip / scale / letters) live in CSS; only
-// transform, opacity and clip-path are animated, so it stays on the compositor.
-function setupReveal() {
-  const footerMark = $(".footer-mark");
-  footerMark.innerHTML = [...footerMark.textContent]
-    .map((ch, i) => `<span style="--l:${i}">${ch}</span>`)
-    .join("");
-
-  if (reducedMotion.matches || !("IntersectionObserver" in window)) return;
-  document.documentElement.classList.add("reveal-ready");
-  const io = new IntersectionObserver(
+// Number counters roll their [data-count] values on first scroll-in.
+// Independent of the GSAP reveal system — kept here for simplicity.
+function setupCounters() {
+  if (!("IntersectionObserver" in window)) return;
+  const co = new IntersectionObserver(
     (entries) =>
       entries.forEach((entry) => {
         if (!entry.isIntersecting) return;
-        entry.target.classList.add("in");
-        io.unobserve(entry.target);
+        runCounter(entry.target);
+        co.unobserve(entry.target);
       }),
-    { rootMargin: "0px 0px -12% 0px" }
+    { rootMargin: "0px 0px -20% 0px" }
   );
-  $$("[data-reveal]").forEach((el) => io.observe(el));
+  $$("[data-count]").forEach((el) => co.observe(el));
 }
 
-// Stop infinite animations (speed lines, float, ticker) while they're off screen.
+// Roll a number from 0 to its target with easing. Honors reduced-motion and
+// re-uses the final value if called more than once.
+function runCounter(el) {
+  if (el.dataset.counted === "1") return;
+  el.dataset.counted = "1";
+  const raw = el.textContent.trim();
+  const target = Number(raw);
+  if (!Number.isFinite(target)) return;
+  const padded = raw.startsWith("0") && raw.length > 1;
+  const padTo = padded ? raw.length : 0;
+  if (reducedMotion.matches) { el.textContent = raw; return; }
+  const start = performance.now();
+  const dur = 1300;
+  const tick = (now) => {
+    const t = Math.min(1, (now - start) / dur);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const v = Math.round(target * eased);
+    el.textContent = padded ? String(v).padStart(padTo, "0") : String(v);
+    if (t < 1) requestAnimationFrame(tick);
+    else el.textContent = raw;
+  };
+  requestAnimationFrame(tick);
+}
+
+// Stop infinite animations (speed lines, float, ticker, 3D tile loop) while
+// they're off screen, so they don't consume CPU when the user can't see them.
 function pauseOffscreen() {
   if (!("IntersectionObserver" in window)) return;
   const io = new IntersectionObserver((entries) =>
     entries.forEach((entry) => entry.target.classList.toggle("is-offscreen", !entry.isIntersecting))
   );
-  $$(".hero, .ticker").forEach((el) => io.observe(el));
+  $$(".hero, .ticker, .tile-loop").forEach((el) => io.observe(el));
+}
+
+/* ------------------------------------------------------------------ Scroll-stack
+   Pinned showcase. The stage pins each card to the top of the viewport as you
+   scroll through it, then releases the next. We translate the previous cards up
+   and out of view so the next one settles on top — like a deck of slides. */
+
+function setupStack() {
+  const stack = $("[data-stack]");
+  if (!stack) return;
+  const cards = $$("[data-stack-card]", stack);
+  const stage = stack.querySelector(".stack-stage") || stack;
+  // Render each card's tee SVG.
+  cards.forEach((card) => {
+    const id = card.dataset.id;
+    const p = catalog[id];
+    const fig = $("[data-stack-tilt]", card);
+    if (p && fig) fig.innerHTML = teeSVG(p, { title: true });
+    if (p) {
+      card.style.setProperty("--garment", p.garment);
+      $(".stack-price", card).innerHTML = (p.was ? `<s>${formatPrice(p.was)}</s>` : "") + formatPrice(p.price);
+    }
+
+    // Pointer-following glare (cheaper version of the product-card tilt).
+    if (!reducedMotion.matches && matchMedia("(hover: hover)").matches && window.matchMedia("(min-width: 721px)").matches) {
+      fig.addEventListener("pointermove", (e) => {
+        const r = fig.getBoundingClientRect();
+        fig.style.setProperty("--mx", `${((e.clientX - r.left) / r.width * 100).toFixed(1)}%`);
+        fig.style.setProperty("--my", `${((e.clientY - r.top) / r.height * 100).toFixed(1)}%`);
+      });
+      fig.addEventListener("pointerout", () => {
+        fig.style.removeProperty("--mx");
+        fig.style.removeProperty("--my");
+      });
+    }
+  });
+
+  if (reducedMotion.matches || cards.length < 2) return;
+  if (!("IntersectionObserver" in window)) return;
+
+
+  // Track whether the stack is in/near the viewport so we only run the
+  // expensive `getBoundingClientRect` reads while the user can actually see
+  // the pin animation. Saves a layout flush per scroll tick otherwise.
+  let stackActive = true;
+  const visibility = new IntersectionObserver(
+    ([entry]) => {
+      stackActive = entry.isIntersecting || entry.boundingClientRect.top > 0;
+    },
+    { rootMargin: "200% 0px 200% 0px" }
+  );
+  visibility.observe(stack);
+
+  const compute = () => {
+    if (!stackActive) return;
+    const vh = innerHeight;
+    const stageTop = stage.getBoundingClientRect().top;
+    const cardHeight = cards[0].offsetHeight;
+    cards.forEach((card, i) => {
+      const s = stackScale({ stageTop, cardHeight, index: i, count: cards.length, vh });
+      card.style.transform = s === 1 ? "" : `scale(${s})`;
+    });
+  };
+
+  let ticking = false;
+  const onScroll = () => {
+    if (!stackActive || ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { compute(); ticking = false; });
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll);
+  compute();
+}
+
+/* ------------------------------------------------------------------ Tile loop speed
+   Speeds the 3D tile loop up subtly with scroll velocity — the faster you
+   scroll, the faster it scrolls. No-op if no .tile-loop-track elements exist
+   (preserved from the old marquee behaviour so the boot order is unchanged). */
+
+function setupMarquee() {
+  if (reducedMotion.matches) return;
+  const tracks = $$(".tile-loop-track");
+  if (!tracks.length) return;
+
+  let lastY = scrollY, lastT = performance.now(), velocity = 0;
+  const tick = (now) => {
+    const dt = Math.max(1, now - lastT);
+    const dy = scrollY - lastY;
+    velocity = velocity * 0.85 + (dy / dt) * 0.15 * 1000; // px/sec
+    lastY = scrollY; lastT = now;
+    const scale = Math.max(0.6, Math.min(1.8, 1 + Math.abs(velocity) * 0.001));
+    tracks.forEach((t) => (t.style.animationDuration = `${38 / scale}s`));
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 
 /* ------------------------------------------------------------------ Boot */
 
 renderGrid();
+refreshReveals($("[data-grid]"));
 setupFilters();
 setupCart();
 setupHero();
-setupReveal();
+initHeroReveal();
+initReveal();
+setupCounters();
 pauseOffscreen();
+setupStack();
+setupMarquee();
 initCursor(dialog);

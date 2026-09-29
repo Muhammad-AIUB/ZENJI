@@ -898,42 +898,264 @@ h1, h2, h3, p, dl, dd, figure { margin: 0; }
 .toast:empty { visibility: hidden; }
 
 /* ------------------------------------------------------------ Scroll reveal
-   Only transform / opacity / clip-path are animated (compositor-friendly).
-   `--d` staggers siblings; `.reveal-ready` is set by JS so no-JS users see everything. */
+   Animations are driven by GSAP + ScrollTrigger in js/reveal.js. No-JS users
+   see everything by default — initial states are only set when GSAP is ready. */
 
-.reveal-ready [data-reveal] {
-  opacity: 0;
-  transition:
-    opacity 0.7s var(--ease-out),
-    transform 0.9s var(--ease-out),
-    clip-path 0.9s var(--ease-out);
-  transition-delay: calc(var(--d, 0) * 90ms);
-  will-change: transform, opacity;
-}
-.reveal-ready [data-reveal="up"] { transform: translate3d(0, 44px, 0); }
-.reveal-ready [data-reveal="left"] { transform: translate3d(-56px, 0, 0) rotate(-1.5deg); }
-.reveal-ready [data-reveal="right"] { transform: translate3d(56px, 0, 0) rotate(1.5deg); }
-.reveal-ready [data-reveal="scale"] { transform: scale(0.9); }
-.reveal-ready [data-reveal="clip"] { opacity: 1; clip-path: inset(0 100% 0 0); transform: translate3d(-16px, 0, 0); }
-.reveal-ready [data-reveal="letters"] { opacity: 1; }
-.reveal-ready [data-reveal="letters"] span {
+/* The per-character spans used by the letters / letters-tight reveals need
+   inline-block so transforms apply cleanly. */
+[data-reveal="letters"] .ch,
+[data-reveal="letters-tight"] .ch {
   display: inline-block;
-  transform: translate3d(0, 105%, 0);
-  transition: transform 0.9s var(--ease-out);
-  transition-delay: calc(var(--l) * 70ms);
+  white-space: pre;
 }
-
-.reveal-ready [data-reveal].in { opacity: 1; transform: none; will-change: auto; }
-.reveal-ready [data-reveal="clip"].in { clip-path: inset(-20% -20% -20% -20%); }
-.reveal-ready [data-reveal="letters"].in span { transform: none; }
-
-/* Title highlighter sweeps in after the clip reveal */
-.reveal-ready .section-title > span { background-size: 0% 0.24em; transition: background-size 0.8s var(--ease-out) 0.45s; }
-.reveal-ready .in .section-title > span,
-.reveal-ready .section-title.in > span { background-size: 100% 0.24em; }
 
 /* Infinite loops stop when their section is off screen (set by JS). */
 .is-offscreen, .is-offscreen * { animation-play-state: paused !important; }
+
+/* ------------------------------------------------------------ GPU layer isolation
+   Promote animated visuals to their own compositor layers so scroll can move
+   them without re-rasterising. `backface-visibility: hidden` plus a z-translate
+   prevents the sub-pixel rounding that causes visible jitter on scroll. */
+
+.feature-tee,
+.card-tee,
+.stack-figure,
+.feature-kanji,
+.card-kanji,
+.story-num {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* `.feature-tee` already animates via `float`. Lock its will-change so the
+   hint survives the animation rather than being re-evaluated each frame. */
+.feature-tee { will-change: transform, opacity; }
+
+/* ------------------------------------------------------------ 3D tile loop
+   Section divider — two parallel horizontal tracks of brand-coloured tiles
+   that scroll in opposite directions. A perspective container tilts each
+   tile around the Y axis so the strip reads as a 3D conveyor belt.
+   No JS — the loop is a single CSS keyframe animating `translate3d`, which
+   stays on the compositor and never causes layout. */
+
+.tile-loop {
+  position: relative;
+  overflow: hidden;
+  background: var(--ink);
+  border-block: 2px solid var(--ink);
+  /* The stage height reserves enough room for the perspective tilt without
+     clipping the tiles' tops/bottoms. */
+  height: clamp(140px, 22vw, 240px);
+  perspective: 900px;
+  perspective-origin: 50% 50%;
+  /* Promote to its own layer so the loop animation doesn't invalidate
+     surrounding layout while it runs. */
+  transform: translateZ(0);
+  contain: paint;
+}
+.tile-loop-stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  /* Two stacked tracks share the stage; each gets its own animation timing. */
+  grid-template-rows: 1fr 1fr;
+  gap: clamp(8px, 1.4vw, 18px);
+  padding: clamp(8px, 1.4vw, 18px) 0;
+  transform-style: preserve-3d;
+}
+.tile-loop-track {
+  display: flex;
+  width: max-content;
+  gap: clamp(8px, 1.4vw, 18px);
+  padding-inline: clamp(8px, 1.4vw, 18px);
+  /* Tilt the whole track around its centre to give the strip a horizon feel.
+     Combined with `perspective` on .tile-loop, tiles closer to the centre
+     appear larger and tiles near the edges recede. */
+  transform: rotateX(38deg);
+  transform-origin: 50% 50%;
+  /* Promote each track to its own GPU layer; lock `will-change` so the hint
+     doesn't churn as the keyframes interpolate. */
+  will-change: transform;
+  backface-visibility: hidden;
+}
+.tile-loop-track--far {
+  animation: tile-loop-far 38s linear infinite;
+}
+.tile-loop-track--near {
+  animation: tile-loop-near 26s linear infinite reverse;
+}
+.tile-loop:hover .tile-loop-track {
+  animation-play-state: paused;
+}
+.tile {
+  /* Each tile is a brand-coloured rectangle with a hard ink border (same
+     brutalist vibe as the rest of the site). `--c` is set inline per tile. */
+  display: block;
+  width: clamp(96px, 14vw, 180px);
+  height: 100%;
+  background: var(--c, var(--red));
+  border: 2px solid var(--ink);
+  /* Subtle depth: alternate tiles rotate slightly so the strip reads as a
+     zigzag of facets, not a flat strip. */
+  transform: rotateY(calc((var(--i, 0) - 0.5) * 14deg));
+  transform-style: preserve-3d;
+  box-shadow: 0 6px 0 rgba(14, 13, 12, 0.55);
+}
+/* Two-pixel ink dot pattern on top of each tile for a screen-print feel. */
+.tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(14, 13, 12, 0.18) 1px, transparent 1.5px);
+  background-size: 6px 6px;
+  pointer-events: none;
+}
+.tile { position: relative; }
+/* Alternate slight Y-axis rotation so the strip reads as a 3D zigzag, not a
+   flat ribbon. Cycle every two tiles. */
+.tile-loop-track .tile:nth-child(2n)   { transform: rotateY(-7deg); }
+.tile-loop-track .tile:nth-child(2n+1) { transform: rotateY(7deg); }
+
+/* Duplicate the tile strip exactly once via the keyframe — the track contains
+   enough tiles to fill any viewport, and the keyframe slides half the total
+   width for a seamless loop. */
+@keyframes tile-loop-far {
+  from { transform: rotateX(38deg) translate3d(0, 0, 0); }
+  to   { transform: rotateX(38deg) translate3d(-50%, 0, 0); }
+}
+@keyframes tile-loop-near {
+  from { transform: rotateX(38deg) translate3d(0, 0, 0); }
+  to   { transform: rotateX(38deg) translate3d(-50%, 0, 0); }
+}
+
+/* Respect reduced motion: render a single static strip, no animation. */
+@media (prefers-reduced-motion: reduce) {
+  .tile-loop-track { animation: none !important; transform: rotateX(28deg); }
+}
+
+/* ------------------------------------------------------------ Scroll-stack
+   Pinned stack of featured products: each card slides up over the previous one
+   as you scroll. The sticky container pins for the duration of the stack. */
+
+.stack {
+  position: relative;
+  background: var(--ink);
+  color: var(--paper);
+  padding: clamp(56px, 7vw, 96px) var(--gutter) clamp(80px, 10vw, 140px);
+}
+.stack-head { max-width: var(--max); margin: 0 auto clamp(28px, 4vw, 56px); }
+.stack-head .section-title { color: var(--paper); }
+.stack-head .section-title > span {
+  background: linear-gradient(100deg, transparent 0.12em, var(--red) 0.12em calc(100% - 0.06em), transparent 0) 0 88% / 100% 0.24em no-repeat;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  padding-inline: 0.06em;
+}
+.stack-head .chapter { color: var(--red); }
+.stack-head .section-sub { color: color-mix(in srgb, var(--paper) 70%, transparent); }
+
+.stack-stage {
+  position: relative;
+  max-width: var(--max);
+  margin: 0 auto;
+  /* The stack is `100vh` tall; each card is sticky inside it for ~100vh of scroll. */
+  display: grid;
+}
+.stack-card {
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: clamp(20px, 4vw, 48px);
+  align-items: center;
+  height: 100dvh;
+  padding: clamp(20px, 4vw, 48px);
+  border: 2px solid var(--paper);
+  background: var(--paper);
+  color: var(--ink);
+  /* Each card uses translateY driven by JS (scroll-linked) so it can climb from
+     the bottom of the viewport as the next one takes over. */
+  will-change: transform;
+}
+.stack-card + .stack-card { margin-top: 12px; }
+.stack-card:nth-of-type(2) { background: var(--red); }
+.stack-card:nth-of-type(3) { background: var(--paper-2); }
+.stack-card:nth-of-type(4) { background: var(--ink); color: var(--paper); border-color: var(--red); }
+
+.stack-index {
+  position: absolute;
+  top: 18px; left: 22px;
+  font: 500 12px/1 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  opacity: 0.7;
+}
+.stack-num {
+  position: absolute;
+  top: clamp(12px, 2vw, 24px); right: clamp(12px, 2vw, 28px);
+  font: 400 clamp(60px, 9vw, 140px) / 1 var(--display);
+  color: transparent;
+  -webkit-text-stroke: 2px currentColor;
+  opacity: 0.25;
+}
+.stack-figure {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  background: color-mix(in srgb, var(--garment) 22%, transparent);
+  border: 2px solid currentColor;
+  overflow: hidden;
+}
+.stack-figure svg { width: 76%; filter: drop-shadow(8px 10px 0 rgba(14, 13, 12, 0.55)); }
+.stack-figure::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.35), transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.stack-card:hover .stack-figure::after { opacity: 1; }
+
+.stack-body { display: grid; gap: clamp(10px, 1.6vw, 18px); }
+.stack-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font: 500 11px/1 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  opacity: 0.7;
+}
+.stack-tag i { width: 8px; height: 8px; background: var(--red); border-radius: 50%; }
+.stack-title { font: 400 clamp(28px, 4.4vw, 56px) / 1 var(--display); text-transform: uppercase; }
+.stack-copy { max-width: 38ch; opacity: 0.75; }
+.stack-foot { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: clamp(8px, 1.4vw, 14px); }
+.stack-price { font: 500 clamp(22px, 2.2vw, 30px) / 1 var(--mono); }
+.stack-price s { font-size: 0.7em; opacity: 0.55; margin-right: 6px; }
+
+/* On small screens the stack collapses to a normal list — pinning 100vh cards is
+   hostile on phones. */
+@media (max-width: 720px) {
+  .stack-card { position: relative; height: auto; min-height: 60vh; grid-template-columns: 1fr; gap: 18px; padding: 24px; }
+  .stack-card + .stack-card { margin-top: 14px; }
+  .stack-figure { aspect-ratio: 1; }
+  .stack-num { font-size: 48px; top: 14px; right: 16px; }
+}
+
+/* ------------------------------------------------------------ Letter-stagger
+   Heading characters split into <span class="ch"> by js/reveal.js, then GSAP
+   flies each one in from alternating left/right on scroll. Inline-block +
+   white-space: pre keep glyphs from collapsing. */
+
+/* ------------------------------------------------------------ Number counter
+   JS animates the textContent of [data-count] inside a stat number on first
+   scroll-in. We just reserve space here so layout doesn't jump. */
+.stat-num { font-variant-numeric: tabular-nums; }
 
 /* ------------------------------------------------------------ Scroll progress */
 
@@ -973,7 +1195,10 @@ h1, h2, h3, p, dl, dd, figure { margin: 0; }
   }
 }
 
-/* ------------------------------------------------------------ Custom cursor */
+/* ------------------------------------------------------------ Custom cursor
+   Theme: apparel hangtag — small ink crosshair stamped on a vermillion dot,
+   surrounded by a dashed "stitch line". On a size picker it becomes a tape measure
+   on a tag; on a primary CTA it becomes the store's hangtag with the action word. */
 
 .has-cursor, .has-cursor * { cursor: none !important; }
 .has-cursor input[type="number"] { cursor: text !important; }
@@ -996,57 +1221,167 @@ h1, h2, h3, p, dl, dd, figure { margin: 0; }
 .cursor.is-visible { opacity: 1; }
 .cursor[data-state="native"] { opacity: 0; }
 
-.cursor-ring, .cursor-dot { position: absolute; left: 0; top: 0; will-change: transform; }
+/* All three layers are positioned at (0,0) and translated by JS. We deliberately do NOT
+   put `transition: transform` on them — that would cause the trailing layers to lag the
+   pointer. JS interpolates in a single rAF loop instead, which is the only smooth option. */
+.cursor-ring, .cursor-dot, .cursor-skew {
+  position: absolute;
+  left: 0; top: 0;
+  will-change: transform;
+  transform: translate3d(-100px, -100px, 0);
+  pointer-events: none;
+}
 
+/* "Stitch line" — a small dashed circle the size of a stitched-on garment label.
+   Drags behind the pointer with a slight skew to convey speed. */
+.cursor-skew {
+  width: 14px; height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 1.25px dashed var(--ink);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.3s, border-color 0.2s, width 0.2s var(--ease-snap), height 0.2s var(--ease-snap);
+}
+.cursor.is-visible .cursor-skew { opacity: 0.7; }
+
+/* The "tag" — a tiny rounded square with a circular eyelet + crosshair, like the
+   stamp on the inside of a tee collar. Rotates with pointer velocity. */
 .cursor-ring-inner {
   position: absolute;
   left: 0; top: 0;
   display: grid;
   place-items: center;
-  width: 34px; height: 34px;
-  border: 2px solid var(--ink);
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--paper); /* double ring reads on ink and paper */
-  transform: translate(-50%, -50%);
+  width: 22px; height: 22px;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  background: var(--paper);
+  box-shadow:
+    0 0 0 1.5px var(--paper),       /* paper halo so the ink reads on dark */
+    1px 1px 0 var(--ink);          /* hard offset shadow — zine print feel */
+  transform: translate(-50%, -50%) rotate(45deg);
   transition:
-    width 0.3s var(--ease-out), height 0.3s var(--ease-out),
-    background-color 0.25s, border-color 0.25s, scale 0.15s;
+    width 0.2s var(--ease-snap), height 0.2s var(--ease-snap),
+    background-color 0.18s, border-color 0.18s, border-radius 0.2s var(--ease-snap),
+    rotate 0.25s var(--ease-snap), box-shadow 0.18s;
 }
+/* Eyelet dot in the tag — the small punched hole of a hangtag */
+.cursor-ring-inner::before {
+  content: "";
+  position: absolute;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1.25px solid var(--ink);
+  transform: rotate(-45deg); /* counter the parent rotate so the eyelet stays round */
+}
+/* Crosshair tick — faint + / - mark inside the tag, like a printed registration mark */
+.cursor-ring-inner::after {
+  content: "";
+  position: absolute;
+  width: 8px; height: 8px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) center / 1px 100% no-repeat,
+    linear-gradient(var(--ink), var(--ink)) center / 100% 1px no-repeat;
+  opacity: 0.55;
+  transform: rotate(-45deg);
+}
+
 .cursor-label {
-  font: 500 11px/1 var(--mono);
-  letter-spacing: 0.08em;
+  font: 500 9.5px/1 var(--mono);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   white-space: nowrap;
   color: var(--ink);
   opacity: 0;
-  transform: scale(0.6);
-  transition: opacity 0.2s, transform 0.3s var(--ease-snap);
-}
-.cursor-dot {
-  width: 8px; height: 8px;
-  margin: -4px 0 0 -4px;
-  border-radius: 50%;
-  background: var(--red);
-  box-shadow: 0 0 0 1.5px var(--ink);
-  transition: opacity 0.2s;
+  transform: scale(0.6) rotate(-45deg);
+  transition: opacity 0.18s, transform 0.22s var(--ease-snap), color 0.18s;
 }
 
-.cursor[data-state="link"] .cursor-ring-inner {
-  width: 54px; height: 54px;
-  border-color: var(--red);
-  background: color-mix(in srgb, var(--red) 18%, transparent);
+/* The dot — a small vermillion "stamp". JS sets its transform every frame (rotation
+   from velocity, squash from speed). At rest it's a 6px square with a hard ink edge. */
+.cursor-dot {
+  width: 6px; height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 1.5px;
+  background: var(--red);
+  box-shadow:
+    0 0 0 1.25px var(--ink),
+    0 0 6px rgba(255, 61, 31, 0.45);
+  transition: opacity 0.18s, border-radius 0.18s;
 }
+.cursor.is-down .cursor-dot { border-radius: 50%; } /* "pressed stamp" */
+
+/* -- Hovering a clickable element ---------------------------------------- */
+.cursor[data-state="link"] .cursor-skew { width: 26px; height: 26px; margin: -13px 0 0 -13px; border-color: var(--red); opacity: 1; }
+.cursor[data-state="link"] .cursor-ring-inner {
+  width: 26px; height: 26px;
+  border-color: var(--red);
+  background: color-mix(in srgb, var(--red) 12%, var(--paper));
+  transform: translate(-50%, -50%) rotate(0deg);
+  border-radius: 50%;
+}
+.cursor[data-state="link"] .cursor-ring-inner::after { opacity: 0; }
+.cursor[data-state="link"] .cursor-dot { opacity: 0; }
+
+/* -- Hovering a size radio (data-cursor="size: M") ----------------------- *
+   The cursor becomes a tiny hangtag with the size printed on it. */
+.cursor[data-state="size"] .cursor-ring-inner {
+  width: 36px; height: 26px;
+  border-color: var(--ink);
+  background: var(--red);
+  border-radius: 3px;
+  transform: translate(-50%, -50%) rotate(0deg);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+.cursor[data-state="size"] .cursor-ring-inner::before,
+.cursor[data-state="size"] .cursor-ring-inner::after { display: none; }
+.cursor[data-state="size"] .cursor-label { color: var(--ink); opacity: 1; transform: scale(1) rotate(0deg); font-weight: 700; }
+.cursor[data-state="size"] .cursor-dot { opacity: 0; }
+.cursor[data-state="size"] .cursor-skew { width: 42px; height: 32px; margin: -21px 0 0 -21px; border-radius: 3px; opacity: 0.8; }
+
+/* -- Hovering a labeled CTA (data-cursor="add to bag" / "shop now") ----- *
+   The tag grows into a real hangtag with the action word, like the price tag on
+   a garment. */
 .cursor[data-state="label"] .cursor-ring-inner {
-  width: 74px; height: 74px;
+  width: 92px; height: 28px;
   background: var(--ink);
   border-color: var(--red);
+  border-radius: 3px;
+  transform: translate(-50%, -50%) rotate(0deg);
+  box-shadow: 2px 2px 0 var(--red);
 }
-.cursor[data-state="label"] .cursor-label { color: var(--paper); }
-.cursor[data-state="label"] .cursor-label { opacity: 1; transform: none; }
+/* Punch hole at the left edge of the hangtag */
+.cursor[data-state="label"] .cursor-ring-inner::before {
+  display: block;
+  width: 5px; height: 5px;
+  background: var(--paper);
+  border-radius: 50%;
+  border: 0;
+  transform: none;
+  position: absolute; left: 6px; top: 50%; margin-top: -2.5px;
+}
+.cursor[data-state="label"] .cursor-ring-inner::after { display: none; }
+.cursor[data-state="label"] .cursor-label { color: var(--paper); opacity: 1; transform: scale(1) rotate(0deg); padding-left: 14px; }
 .cursor[data-state="label"] .cursor-dot { opacity: 0; }
-.cursor.is-down .cursor-ring-inner { scale: 0.82; }
+.cursor[data-state="label"] .cursor-skew { width: 100px; height: 36px; margin: -50px 0 0 -50px; border-radius: 4px; opacity: 0.55; }
 
-/* ------------------------------------------------------------ Responsive */
+/* -- Press feedback ------------------------------------------------------ */
+.cursor.is-down .cursor-ring-inner { scale: 0.86; }
+.cursor.is-down .cursor-skew { scale: 1.25; }
+
+/* ------------------------------------------------------------ Responsive
+   Breakpoints:
+     wide   ≥1280  : default (manga spread, 3-col story, 3-up footer-free grid)
+     large  ≥961–1279: 3-up story, 4-up product grid, hero stays as spread
+     med    721–960 : 2-col story (3rd spans), hero reflows 2×2, header nav visible
+     sm     481–720 : nav collapses, hero stacked, 2-col product grid, 1-col story
+     xs     ≤480    : extra-tight spacing, 1-col grid, larger touch targets
+*/
+
+@media (max-width: 1279px) {
+  :root { --max: 1180px; --wide: 1280px; }
+  .panel-stats div { padding: 16px clamp(10px, 1.6vw, 22px); }
+}
 
 @media (max-width: 1080px) {
   .hero {
@@ -1065,53 +1400,164 @@ h1, h2, h3, p, dl, dd, figure { margin: 0; }
   .panel-stats { clip-path: none; padding-right: 0; }
 }
 
+@media (max-width: 960px) {
+  /* Story: 2 columns + full-width third panel */
+  .story { grid-template-columns: 1fr 1fr; }
+  .story-panel:nth-of-type(3) { grid-column: 1 / -1; }
+
+  /* Product grid: 2-up instead of 3-4-up */
+  .grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: clamp(18px, 2vw, 24px); }
+
+  /* Cart drawer slightly wider on tablets */
+  .cart { width: min(520px, 100vw); }
+
+  /* Tighter section padding */
+  .shop { padding-top: clamp(48px, 6vw, 80px); }
+}
+
 @media (max-width: 720px) {
   body { font-size: 15px; }
+
+  /* Header collapses nav, keeps logo + cart */
   .nav { display: none; }
   .cart-btn { margin-left: auto; }
-  .site-header { padding-block: 10px; }
+  .site-header { padding-block: 10px; gap: 14px; }
   .logo-mark { width: 34px; height: 34px; font-size: 19px; }
   .logo-word { font-size: 19px; }
+  .cart-btn { min-height: 40px; padding: 0 8px 0 14px; gap: 8px; font-size: 12px; }
+  .cart-btn-label { font-size: 12px; }
+  .cart-count { min-width: 26px; height: 26px; font-size: 13px; }
 
+  /* Hero stacks: title → feature → stats */
   .hero { gap: 8px; padding: 8px; min-height: 0; }
   .panel-title { gap: 22px; padding: 36px 22px 52px; }
   .hero-title { font-size: clamp(38px, 12vw, 58px); }
-  .hero-actions .btn { flex: 1 1 auto; }
-  .panel-feature { min-height: 400px; }
+  .hero-actions .btn { flex: 1 1 auto; min-height: 46px; }
+  .panel-feature { min-height: 400px; padding-bottom: 56px; }
   .feature-figure { width: 74%; }
+  .feature-kanji { font-size: clamp(140px, 32vw, 240px); }
+  .feature-kanji[data-len="2"] { font-size: clamp(96px, 18vw, 160px); }
+  .feature-kanji[data-len="3"] { font-size: clamp(72px, 14vw, 120px); }
   .feature-caption { left: -10%; bottom: -14px; padding: 8px 12px; box-shadow: 3px 3px 0 var(--ink); }
   .feature-caption strong { font-size: 15px; }
   .hero-pager { left: 8px; right: 8px; bottom: 8px; justify-content: space-between; }
   .hero-pager button { min-width: 0; flex: 1; height: 40px; }
-  .panel-feature { padding-bottom: 56px; }
+  .panel-stats { grid-template-columns: repeat(3, 1fr); }
   .panel-stats div { padding: 14px 12px; }
+  .panel-stats dt { font-size: 11px; letter-spacing: 0.14em; }
+  .panel-stats dd { font-size: clamp(20px, 5vw, 28px); }
 
   .card-body { padding: 18px 16px 20px; }
+  .card-name { font-size: 16px; }
   .size-row { gap: 5px; }
 
-  .story { grid-template-columns: 1fr; gap: 8px; padding: 8px; }
+  /* Story becomes a single column with skewed panels */
+  .story { grid-template-columns: 1fr; gap: 8px; padding: 8px; margin-top: clamp(40px, 6vw, 72px); }
   .story-panel:nth-of-type(2) { clip-path: polygon(0 4%, 100% 0, 100% 96%, 0 100%); }
+  .story-panel { padding: clamp(20px, 5vw, 32px); }
+  .story-num { font-size: 36px; }
+  .story-panel h3 { font-size: clamp(18px, 4.6vw, 22px); }
 
+  /* FAQ */
+  .faq { padding-top: clamp(48px, 7vw, 80px); padding-bottom: clamp(48px, 7vw, 80px); }
+  .faq summary { min-height: 56px; font-size: 16px; }
+
+  /* Footer */
+  .site-footer { padding: 32px var(--gutter) 24px; }
+  .footer-note { font-size: 12px; padding: 0 12px; }
+
+  /* Cart drawer goes full-bleed on mobile so it doesn't feel cramped */
+  .cart { width: 100vw; max-width: 100vw; border-left-width: 0; }
+  .cart-head { padding: 16px 18px; }
+  .cart-lines { padding: 0 18px; }
+  .cart-foot { padding: 16px 18px 20px; }
   .cart-line { grid-template-columns: 64px 1fr auto; gap: 12px; }
+
+  /* Toast moves up to avoid mobile gesture bar overlap */
+  .toast { left: 16px; right: 16px; bottom: 16px; transform: translateY(160%); max-width: none; }
+  .toast.show { transform: translateY(0); }
 }
 
-@media (max-width: 900px) and (min-width: 721px) {
-  .story { grid-template-columns: 1fr 1fr; }
-  .story-panel:nth-of-type(3) { grid-column: 1 / -1; }
-}
+@media (max-width: 480px) {
+  /* Tighter gutters and section heads */
+  :root { --gutter: clamp(12px, 4vw, 20px); }
+  body { font-size: 14px; }
 
-@media (max-width: 380px) {
-  .site-header { gap: 12px; }
+  .site-header { padding: 8px var(--gutter); gap: 10px; }
+  .logo-mark { width: 32px; height: 32px; font-size: 18px; box-shadow: 2px 2px 0 var(--ink); }
+  .logo-word { font-size: 18px; }
   .cart-btn-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .cart-btn { padding-left: 7px; }
-  .panel-title { padding: 30px 18px 48px; }
-  .panel-stats div { padding: 12px 10px; }
-  .panel-stats dd { font-size: 21px; }
-  .panel-stats dt { font-size: 10px; letter-spacing: 0.1em; }
+  .cart-btn { padding: 0 10px; min-height: 38px; }
+  .cart-btn .cart-btn-label { display: none; }
+
+  /* Ticker slightly shorter on small phones */
+  .ticker-track { gap: 22px; padding: 9px 0; font-size: 11px; }
+
+  /* Hero */
+  .panel-title { padding: 28px 18px 44px; gap: 18px; }
+  .hero-title { font-size: clamp(34px, 13vw, 52px); }
+  .hero-copy { font-size: 14px; }
+  .eyebrow { font-size: 11px; letter-spacing: 0.14em; }
+
+  /* Single-column product grid on phones */
+  .grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+
+  /* Cards: bigger touch targets, simpler thumb */
+  .card-media { aspect-ratio: 1 / 1; }
+  .card-no { font-size: 11px; padding: 4px 7px; }
+  .badge { width: 48px; height: 48px; font-size: 11px; top: 10px; right: 10px; }
+  .card-body { padding: 16px 14px 18px; gap: 10px; }
+  .card-name { font-size: 15px; }
   .size-row { gap: 4px; }
-  .size span { font-size: 11px; }
-  .stepper button { width: 34px; }
-  .cart-line { grid-template-columns: 52px 1fr auto; gap: 10px; }
+  .size span { min-height: 42px; font-size: 12px; }
+
+  /* Story panels get a softer skew at xs */
+  .story-panel { padding: 22px 18px; }
+  .story-num { font-size: 30px; }
+
+  /* Filters wrap */
+  .filters { flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .chip { min-height: 40px; padding: 0 14px; font-size: 12px; }
+
+  /* Section titles get a bit smaller */
+  .section-title { font-size: clamp(26px, 8vw, 36px); }
+  .section-head { margin-bottom: 22px; }
+  .chapter { font-size: 11px; letter-spacing: 0.16em; }
+
+  /* Cart tighter */
+  .cart-head { padding: 14px 16px; }
+  .cart-lines { padding: 0 16px; }
+  .cart-foot { padding: 14px 16px 18px; }
+  .cart-line { grid-template-columns: 56px 1fr auto; gap: 12px; padding: 16px 0; }
+  .line-thumb { width: 56px; }
+  .stepper button { width: 36px; height: 36px; }
+  .totals dd { font-size: 20px; }
+  .ship-meter { padding: 12px 16px; font-size: 13px; }
+
+  /* Footer mark tightens so it doesn't overflow */
+  .footer-mark { font-size: clamp(48px, 22vw, 96px); }
+  .footer-note { font-size: 11px; }
+}
+
+/* Coarse pointer / no-hover devices: kill the custom cursor entirely so the OS
+   caret/touch indicator stays in charge. Also disable on devices that explicitly
+   request reduced motion. */
+@media (hover: none), (pointer: coarse) {
+  .has-cursor, .has-cursor * { cursor: auto !important; }
+  .cursor { display: none !important; }
+}
+
+/* Tighter landscape phones (height-challenged hero) */
+@media (max-height: 520px) and (orientation: landscape) {
+  .hero { min-height: 0; }
+  .panel-feature { min-height: 320px; padding-bottom: 48px; }
+  .panel-title { padding-block: clamp(20px, 4vw, 36px); }
+}
+
+/* Very wide screens: keep section content readable; let only the colored bands go full-bleed */
+@media (min-width: 1600px) {
+  :root { --max: 1440px; --wide: 1680px; }
+  .hero-title { font-size: clamp(60px, 6vw, 108px); }
 }
 
 /* ------------------------------------------------------------ Reduced motion */
@@ -1124,4 +1570,6 @@ h1, h2, h3, p, dl, dd, figure { margin: 0; }
     scroll-behavior: auto !important;
   }
   .ticker-track { animation: none; flex-wrap: wrap; width: auto; }
+  /* Disable the dashed-ring spin and cursor-driven transforms */
+  .cursor-ring-inner::before { animation: none; }
 }

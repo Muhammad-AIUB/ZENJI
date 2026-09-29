@@ -11,6 +11,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DM+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
@@ -91,9 +93,9 @@
       </div>
 
       <dl class="panel panel-stats">
-        <div><dt>Weight</dt><dd>240<small>gsm</small></dd></div>
-        <div><dt>Designs</dt><dd>06</dd></div>
-        <div><dt>Restocks</dt><dd class="accent">00</dd></div>
+        <div><dt>Weight</dt><dd class="stat-num"><span data-count="240">240</span><small>gsm</small></dd></div>
+        <div><dt>Designs</dt><dd class="stat-num"><span data-count="06">06</span></dd></div>
+        <div><dt>Restocks</dt><dd class="stat-num accent"><span data-count="00">00</span></dd></div>
       </dl>
     </section>
 
@@ -113,25 +115,160 @@
       <ul class="grid" data-grid role="list"></ul>
     </section>
 
+    <!-- 3D TILE divider -->
+    <div class="tile-loop" aria-hidden="true">
+      <div class="tile-loop-stage">
+        <div class="tile-loop-track tile-loop-track--far">
+          <span class="tile" style="--c:#d6a13a"></span>
+          <span class="tile" style="--c:#3b6ea5"></span>
+          <span class="tile" style="--c:#5b3a8a"></span>
+          <span class="tile" style="--c:#1b1917"></span>
+          <span class="tile" style="--c:#f4ece0"></span>
+          <span class="tile" style="--c:#ff3d1f"></span>
+          <span class="tile" style="--c:#d6a13a"></span>
+          <span class="tile" style="--c:#3b6ea5"></span>
+          <span class="tile" style="--c:#5b3a8a"></span>
+          <span class="tile" style="--c:#1b1917"></span>
+          <span class="tile" style="--c:#f4ece0"></span>
+          <span class="tile" style="--c:#ff3d1f"></span>
+        </div>
+        <div class="tile-loop-track tile-loop-track--near">
+          <span class="tile" style="--c:#1b1917"></span>
+          <span class="tile" style="--c:#ff3d1f"></span>
+          <span class="tile" style="--c:#d6a13a"></span>
+          <span class="tile" style="--c:#f4ece0"></span>
+          <span class="tile" style="--c:#3b6ea5"></span>
+          <span class="tile" style="--c:#5b3a8a"></span>
+          <span class="tile" style="--c:#1b1917"></span>
+          <span class="tile" style="--c:#ff3d1f"></span>
+          <span class="tile" style="--c:#d6a13a"></span>
+          <span class="tile" style="--c:#f4ece0"></span>
+          <span class="tile" style="--c:#3b6ea5"></span>
+          <span class="tile" style="--c:#5b3a8a"></span>
+        </div>
+      </div>
+    </div>
+
     <!-- STORY -->
     <section id="story" class="story" aria-labelledby="story-title">
       <h2 id="story-title" class="visually-hidden">Why ZENJI</h2>
       <article class="story-panel" data-reveal="left">
         <span class="story-num mono">壱</span>
-        <h3>Anime-inspired.</h3>
+        <h3 data-reveal="letters-tight">Anime-inspired.</h3>
         <p>References you can read without an explanation. One strong graphic per piece, never a template.</p>
       </article>
       <article class="story-panel" data-reveal="scale" style="--d:1">
         <span class="story-num mono">弐</span>
-        <h3>Gamer-built.</h3>
+        <h3 data-reveal="letters-tight">Gamer-built.</h3>
         <p>Made by people who grew up on the same arcs. Heavyweight cotton that survives the grind.</p>
       </article>
       <article class="story-panel" data-reveal="right" style="--d:2">
         <span class="story-num mono">参</span>
-        <h3>Community-owned.</h3>
+        <h3 data-reveal="letters-tight">Community-owned.</h3>
         <p>Limited runs, zero restocks. When a drop is gone, the story is yours to keep.</p>
       </article>
     </section>
+
+    <!-- SCROLL-STACK showcase -->
+    <section class="stack" aria-labelledby="stack-title">
+      <header class="stack-head" data-reveal="up">
+        <p class="chapter mono">Chapter 02 — 第二章</p>
+        <h2 id="stack-title" class="section-title"><span>Featured in this drop</span></h2>
+        <p class="section-sub">Scroll through four signature pieces. Each pins for a beat before the next slides over.</p>
+      </header>
+      <div class="stack-stage" data-stack>
+        <article class="stack-card" style="--garment:#d6a13a" data-stack-card data-id="will-of-the-sun">
+          <span class="stack-index mono">No.01 / Drop 01</span>
+          <span class="stack-num">01</span>
+          <div class="stack-figure" data-stack-tilt></div>
+          <div class="stack-body">
+            <span class="stack-tag"><i></i>Now shipping</span>
+            <h3 class="stack-title">Will of the Sun</h3>
+            <p class="stack-copy">Solar gold heavyweight tee with an oversized kanji back-print. Drop 01's flagship.</p>
+            <div class="stack-foot">
+              <span class="stack-price">A$39.99</span>
+              <a class="btn btn-primary" href="#shop" data-cursor="View +">View in shop</a>
+            </div>
+          </div>
+        </article>
+        <article class="stack-card" style="--garment:#3b6ea5" data-stack-card data-id="water-breathing">
+          <span class="stack-index mono">No.02 / Drop 01</span>
+          <span class="stack-num">02</span>
+          <div class="stack-figure" data-stack-tilt></div>
+          <div class="stack-body">
+            <span class="stack-tag"><i></i>Bestseller</span>
+            <h3 class="stack-title">Water Breathing</h3>
+            <p class="stack-copy">Ocean teal, hand-screened 水 character. Limited to 200 units worldwide.</p>
+            <div class="stack-foot">
+              <span class="stack-price">A$39.99</span>
+              <a class="btn btn-primary" href="#shop" data-cursor="View +">View in shop</a>
+            </div>
+          </div>
+        </article>
+        <article class="stack-card" style="--garment:#5b3a8a" data-stack-card data-id="domain-expansion">
+          <span class="stack-index mono">No.03 / Drop 01</span>
+          <span class="stack-num">03</span>
+          <div class="stack-figure" data-stack-tilt></div>
+          <div class="stack-body">
+            <span class="stack-tag"><i></i>Almost gone</span>
+            <h3 class="stack-title">Domain Expansion</h3>
+            <p class="stack-copy">Void purple with metallic ink. The piece collectors reach for first.</p>
+            <div class="stack-foot">
+              <span class="stack-price"><s>A$39.99</s>A$33.99</span>
+              <a class="btn btn-primary" href="#shop" data-cursor="View +">View in shop</a>
+            </div>
+          </div>
+        </article>
+        <article class="stack-card" style="--garment:#1b1917" data-stack-card data-id="demon-blood">
+          <span class="stack-index mono">No.04 / Drop 01</span>
+          <span class="stack-num">04</span>
+          <div class="stack-figure" data-stack-tilt></div>
+          <div class="stack-body">
+            <span class="stack-tag"><i></i>Final pieces</span>
+            <h3 class="stack-title">Demon Blood</h3>
+            <p class="stack-copy">Crimson pink with an ink-black slash print. When it's gone, it's gone.</p>
+            <div class="stack-foot">
+              <span class="stack-price"><s>A$39.99</s>A$33.99</span>
+              <a class="btn btn-primary" href="#shop" data-cursor="View +">View in shop</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 3D TILE divider -->
+    <div class="tile-loop" aria-hidden="true">
+      <div class="tile-loop-stage">
+        <div class="tile-loop-track tile-loop-track--far">
+          <span class="tile" style="--c:#5b3a8a"></span>
+          <span class="tile" style="--c:#d6a13a"></span>
+          <span class="tile" style="--c:#1b1917"></span>
+          <span class="tile" style="--c:#f4ece0"></span>
+          <span class="tile" style="--c:#ff3d1f"></span>
+          <span class="tile" style="--c:#3b6ea5"></span>
+          <span class="tile" style="--c:#5b3a8a"></span>
+          <span class="tile" style="--c:#d6a13a"></span>
+          <span class="tile" style="--c:#1b1917"></span>
+          <span class="tile" style="--c:#f4ece0"></span>
+          <span class="tile" style="--c:#ff3d1f"></span>
+          <span class="tile" style="--c:#3b6ea5"></span>
+        </div>
+        <div class="tile-loop-track tile-loop-track--near">
+          <span class="tile" style="--c:#f4ece0"></span>
+          <span class="tile" style="--c:#1b1917"></span>
+          <span class="tile" style="--c:#ff3d1f"></span>
+          <span class="tile" style="--c:#5b3a8a"></span>
+          <span class="tile" style="--c:#3b6ea5"></span>
+          <span class="tile" style="--c:#d6a13a"></span>
+          <span class="tile" style="--c:#f4ece0"></span>
+          <span class="tile" style="--c:#1b1917"></span>
+          <span class="tile" style="--c:#ff3d1f"></span>
+          <span class="tile" style="--c:#5b3a8a"></span>
+          <span class="tile" style="--c:#3b6ea5"></span>
+          <span class="tile" style="--c:#d6a13a"></span>
+        </div>
+      </div>
+    </div>
 
     <section id="faq" class="faq" aria-labelledby="faq-title">
       <h2 id="faq-title" class="section-title small" data-reveal="clip"><span>Questions</span></h2>
@@ -193,6 +330,7 @@
 
   <!-- Decorative custom cursor (mouse only; see js/cursor.js) -->
   <div class="cursor" data-cursor-root aria-hidden="true">
+    <span class="cursor-skew"></span>
     <span class="cursor-ring"><span class="cursor-ring-inner"><span class="cursor-label"></span></span></span>
     <span class="cursor-dot"></span>
   </div>
